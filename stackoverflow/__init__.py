@@ -5,9 +5,9 @@ import sys
 from importlib._bootstrap import spec_from_loader
 
 import requests
+import importlib.abc
 
-
-class StackOverflowImporter:
+class StackOverflowImporter(importlib.abc.MetaPathFinder, importlib.abc.SourceLoader):
     """ 
     `from stackoverflow import quick_sort` will go through the search results 
     of `[python] quick sort` looking for the largest code block that doesn't 
@@ -16,47 +16,58 @@ class StackOverflowImporter:
     """
     API_URL = "https://api.stackexchange.com"
 
-    @classmethod
-    def find_spec(cls, fullname, path=None, target=None):
-        spec = spec_from_loader(fullname, cls, origin='hell')
-        spec.__license__ = "CC BY-SA 3.0"
-        spec._url = cls._fetch_url(spec.name)
-        spec._code, spec.__author__ = cls._fetch_code(spec._url)
-        return spec
+    #@classmethod
+    def find_spec(self, fullname, path=None, target=None):
+        return importlib.machinery.ModuleSpec(fullname, StackOverflowImporter(), is_package=self.is_package(fullname))
+        # spec = spec_from_loader(fullname, cls, origin='hell')
+        # spec.__license__ = "CC BY-SA 3.0"
+        # spec._url = cls._fetch_url(spec.name)
+        # spec._code, spec.__author__ = cls._fetch_code(spec._url)
+        # return spec
 
-    @classmethod
-    def create_module(cls, spec):
-        """Create a built-in module"""
-        return spec
+    # @classmethod
+    # def create_module(cls, spec):
+    #     """Create a built-in module"""
+    #     return spec
+    #
+    # @classmethod
+    # def exec_module(cls, module=None):
+    #     """Exec a built-in module"""
+    #     try:
+    #         exec(module._code, module.__dict__)
+    #     except:
+    #         print(module._url)
+    #         print(module._code)
+    #         raise
 
-    @classmethod
-    def exec_module(cls, module=None):
-        """Exec a built-in module"""
-        try:
-            exec(module._code, module.__dict__)
-        except:
-            print(module._url)
-            print(module._code)
-            raise
+    # @classmethod
+    # def get_code(cls, fullname):
+    #     return compile(cls._fetch_code(cls._fetch_url(fullname)), 'StackOverflow.com/' + fullname, 'exec')
+    #
+    # @classmethod
+    # def get_source(cls, fullname):
+    #     return cls.get_code(fullname)
 
-    @classmethod
-    def get_code(cls, fullname):
-        return compile(cls._fetch_code(cls._fetch_url(fullname)), 'StackOverflow.com/' + fullname, 'exec')
+    # @classmethod
+    def get_data(self, fullname):
+        code = self._fetch_code(self._fetch_url(fullname))
+        # print(code[0])
+        return code[0]
 
-    @classmethod
-    def get_source(cls, fullname):
-        return cls.get_code(fullname)
+    # @classmethod
+    def get_filename(self, fullname):
+        return fullname
 
-    @classmethod
-    def is_package(cls, fullname):
+    # @classmethod
+    def is_package(self, fullname):
         return False
 
     ############################
 
-    @classmethod
-    def _fetch_url(cls, query):
+    # @classmethod
+    def _fetch_url(self, query):
         query = query.lower().replace("stackoverflow.", "").replace("_", " ")
-        ans = requests.get(cls.API_URL + "/search", {
+        ans = requests.get(self.API_URL + "/search", params={
             "order": "desc",
             "sort": "votes",
             "tagged": "python",
@@ -67,10 +78,10 @@ class StackOverflowImporter:
             raise ImportError("Couldn't find any question matching `" + query + "`")
         return ans["items"][0]["link"]
 
-    @classmethod
-    def _fetch_code(cls, url):
+    # @classmethod
+    def _fetch_code(self, url):
         q = requests.get(url)
-        return cls._find_code_in_html(q.text)
+        return self._find_code_in_html(q.text)
 
     @staticmethod
     def _find_code_in_html(s):
