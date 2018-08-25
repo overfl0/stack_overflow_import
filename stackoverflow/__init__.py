@@ -66,7 +66,8 @@ class StackOverflowImporter(importlib.abc.MetaPathFinder, importlib.abc.SourceLo
 
     # @classmethod
     def _fetch_url(self, query):
-        query = query.lower().replace("stackoverflow.", "").replace("_", " ")
+        query = query.lower().replace("_", " ")
+        query = query[query.find('stackoverflow.') + len('stackoverflow.'):]
         ans = requests.get(self.API_URL + "/search", params={
             "order": "desc",
             "sort": "votes",
