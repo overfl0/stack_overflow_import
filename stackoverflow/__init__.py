@@ -86,7 +86,7 @@ class StackOverflowImporter(importlib.abc.MetaPathFinder, importlib.abc.SourceLo
 
     @staticmethod
     def _find_code_in_html(s):
-        answers = re.findall(r'<div id="answer-.*?</table', s, re.DOTALL)  # come get me, Zalgo
+        answers = re.findall(r'<div id="answer-.*?<a name="', s, re.DOTALL)  # come get me, Zalgo
 
         def votecount(x):
             """
